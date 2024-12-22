@@ -42,21 +42,14 @@ func TestAddGetDelete(t *testing.T) {
 	// add
 	id,err:=store.Add(parcel)
 	// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
-	if err != nil {
-        t.Fatalf("Failed to add parcel: %v", err)
-    }
-    if id == 0 {
-        t.Fatalf("Invalid parcel ID, got %d", id)
-    }
+	require.NoError(t,err)
+	require.Greater(t,id,0)
 
 
 	// get
 	p,err:=store.Get(id)
 	// получите только что добавленную посылку, убедитесь в отсутствии ошибки
-	if err!=nil{
-		t.Fatalf("Failed to get parcel: %v",err)
-	}
-	
+	require.NoError(t,err)
 	require.Equal(t, p, parcel, "Parcel does not match.")
 
 	// проверьте, что значения всех полей в полученном объекте совпадают со значениями полей в переменной parcel
@@ -64,32 +57,23 @@ func TestAddGetDelete(t *testing.T) {
 	// delete
 	err=store.Delete(id)
 	// удалите добавленную посылку, убедитесь в отсутствии ошибки
-	if err!=nil{
-		t.Fatalf("Parcel failed to delete: %v",err)
-	}
+	require.NoError(t,err)
 	// проверьте, что посылку больше нельзя получить из БД
 	_,err=store.Get(id)
-	if err==nil{
-		t.Fatalf("Parcel still in DB after delete command")
-	}
+	require.NotNil(t, err, "Parcel should not exist in the DB after delete command")
 }
 
 // TestSetAddress проверяет обновление адреса
 func TestSetAddress(t *testing.T) {
 	// prepare
 	db,err:=sql.Open("sqlite","tracker.db")
-	if err!=nil{
-		fmt.Println(err)
-		return
-	}
+	require.NoError(t,err)
 	store := NewParcelStore(db)
 	parcel := getTestParcel()
 
 	// add
 	id,err:=store.Add(parcel)
-	if err!=nil{
-		t.Fatalf("Failed to add parcel to DB: %v",err)
-	}
+	require.NoError(t,err)
 	// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
 
 	// set address
@@ -97,14 +81,10 @@ func TestSetAddress(t *testing.T) {
 	newAddress := "new test address"
 	err=store.SetAddress(id,newAddress)
 	// check
-	if err!=nil{
-		t.Fatalf("Error while changin adress: %v",err)
-	}
+	require.NoError(t,err)
 	// получите добавленную посылку и убедитесь, что адрес обновился
 	p,err:=store.Get(id)
-	if err!=nil{
-		t.Fatalf("Failed to get row: %v",err)
-	}
+	require.NoError(t,err)
 	require.Equal(t, p.Address, newAddress, "Adress does not match.")
 }
 
@@ -112,34 +92,23 @@ func TestSetAddress(t *testing.T) {
 func TestSetStatus(t *testing.T) {
 	// prepare
 	db,err:=sql.Open("sqlite","tracker.db")
-	if err!=nil{
-		fmt.Println(err)
-		return
-	}
+	require.NoError(t,err)
 	store := NewParcelStore(db)
 	parcel := getTestParcel()
 
 
 	// add
 	id,err:=store.Add(parcel)
-	if err!=nil{
-		t.Fatalf("Failed to add parcel to DB: %v",err)
-	}
+	require.NoError(t,err)
 	// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
 
 	// set status
 	err=store.SetStatus(id,ParcelStatusSent)
-	if err!=nil{
-		t.Fatalf("Failed to set status: %v",err)
-	}
+	require.NoError(t,err)
 	// обновите статус, убедитесь в отсутствии ошибки
 	p,err:=store.Get(id)
-	if err!=nil{
-		t.Fatalf("Failed to get row: %v",err)
-	}
-	if p.Status!=ParcelStatusSent{
-		t.Fatalf("Status does not match. Retrieved: %s. Expected: %s",p.Status,ParcelStatusSent)
-	}
+	require.NoError(t,err)
+	require.Equal(t, ParcelStatusSent, p.Status, "Status does not match")
 	// check
 	// получите добавленную посылку и убедитесь, что статус обновился
 }
@@ -148,10 +117,7 @@ func TestSetStatus(t *testing.T) {
 func TestGetByClient(t *testing.T) {
 	// prepare
 	db,err:=sql.Open("sqlite","tracker.db")
-	if err!=nil{
-		fmt.Println(err)
-		return
-	}
+	require.NoError(t,err)
 	store := NewParcelStore(db)
 
 
@@ -171,9 +137,7 @@ func TestGetByClient(t *testing.T) {
 	// add
 	for i := 0; i < len(parcels); i++ {
 		id, err := store.Add(parcels[i])
-		if err!=nil{
-			t.Fatalf("Failed to add client")
-		}
+		require.NoError(t,err)
 		// обновляем идентификатор добавленной у посылки
 		parcels[i].Number = id
 
@@ -184,16 +148,12 @@ func TestGetByClient(t *testing.T) {
 	// get by client
 	storedParcels, err := store.GetByClient(client)
 	// убедитесь в отсутствии ошибки
-	if err!=nil{
-		t.Fatalf("Failed to receive list of parcels: %v",err)
-	}
+	require.NoError(t,err)
 	// убедитесь, что количество полученных посылок совпадает с количеством добавленных
 	require.Equal(t,len(storedParcels),len(parcels),"Amount of parcels retrieved from DB does not match amount added")
 	for _, parcel := range storedParcels {
 		expectedParcel, ok := parcelMap[parcel.Number]
-    if !ok {
-        t.Fatalf("Unexpected parcel found with ID: %d", parcel.Number)
-    }
+	require.True(t, ok, "Unexpected parcel found with ID: %d", parcel.Number)
     require.Equal(t, expectedParcel, parcel, "Parcel does not match for parcel ID: %d", parcel.Number)
 }
 }

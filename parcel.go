@@ -65,7 +65,9 @@ func (s ParcelStore) GetByClient(client int) ([]Parcel, error) {
 		}
 		res = append(res, p)
 	}
-
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
 	return res, nil
 }
 
@@ -81,20 +83,18 @@ func (s ParcelStore) SetStatus(number int, status string) error {
 
 func (s ParcelStore) SetAddress(number int, address string) error {
 	// реализуйте обновление адреса в таблице parcel
-	query:= "SELECT status FROM parcel WHERE number=?"
-	var status string
-	err := s.db.QueryRow(query, number).Scan(&status)
+	query := "UPDATE parcel SET address = ? WHERE number = ? AND status = ?"
+	result, err := s.db.Exec(query, address, number, ParcelStatusRegistered)
+	if err!=nil{
+		return err
+	}
+
+	affected, err := result.RowsAffected()
 	if err != nil {
 		return err
 	}
-	if status!=ParcelStatusRegistered{
-		return fmt.Errorf("Parcel not registered")
-	}
-
-	query = "UPDATE parcel SET address = ? WHERE number = ?"
-	_, err = s.db.Exec(query, address, number)
-	if err!=nil{
-		return err
+	if affected == 0 {
+		return fmt.Errorf("parcel not found or not registered")
 	}
 	// менять адрес можно только если значение статуса registered
 	
@@ -105,22 +105,19 @@ func (s ParcelStore) SetAddress(number int, address string) error {
 func (s ParcelStore) Delete(number int) error {
 	// реализуйте удаление строки из таблицы parcel
 	// удалять строку можно только если значение статуса registered
-	query:= "SELECT status FROM parcel WHERE number=?"
-	var status string
-	err := s.db.QueryRow(query, number).Scan(&status)
-	if err != nil {
-		return err
-	}
-	if status!=ParcelStatusRegistered{
-		return fmt.Errorf("Parcel not registered")
-	}
-
-	query="DELETE FROM parcel WHERE number=?"
-	_,err=s.db.Exec(query,number)
+	
+	query:="DELETE FROM parcel WHERE number=? AND status=?"
+	result,err:=s.db.Exec(query,number,ParcelStatusRegistered)
 	if err!=nil{
 		return err
 	}
-
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return fmt.Errorf("parcel not found or not registered")
+	}
 
 	return nil
 }
