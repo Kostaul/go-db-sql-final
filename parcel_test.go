@@ -5,9 +5,9 @@ import (
 	"math/rand"
 	"testing"
 	"time"
-	"fmt"
 
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -32,10 +32,7 @@ func getTestParcel() Parcel {
 // TestAddGetDelete проверяет добавление, получение и удаление посылки
 func TestAddGetDelete(t *testing.T) {
 	db,err:=sql.Open("sqlite","tracker.db")
-	if err!=nil{
-		fmt.Println(err)
-		return
-	}
+	require.NoError(t,err)
 	store := NewParcelStore(db)
 	parcel := getTestParcel()
 
@@ -50,7 +47,7 @@ func TestAddGetDelete(t *testing.T) {
 	p,err:=store.Get(id)
 	// получите только что добавленную посылку, убедитесь в отсутствии ошибки
 	require.NoError(t,err)
-	require.Equal(t, p, parcel, "Parcel does not match.")
+	assert.Equal(t, p, parcel, "Parcel does not match.")
 
 	// проверьте, что значения всех полей в полученном объекте совпадают со значениями полей в переменной parcel
 
@@ -60,7 +57,7 @@ func TestAddGetDelete(t *testing.T) {
 	require.NoError(t,err)
 	// проверьте, что посылку больше нельзя получить из БД
 	_,err=store.Get(id)
-	require.NotNil(t, err, "Parcel should not exist in the DB after delete command")
+	require.Error(t, err, "Parcel should not exist in the DB after delete command")
 }
 
 // TestSetAddress проверяет обновление адреса
@@ -85,7 +82,7 @@ func TestSetAddress(t *testing.T) {
 	// получите добавленную посылку и убедитесь, что адрес обновился
 	p,err:=store.Get(id)
 	require.NoError(t,err)
-	require.Equal(t, p.Address, newAddress, "Adress does not match.")
+	assert.Equal(t, p.Address, newAddress, "Adress does not match.")
 }
 
 // TestSetStatus проверяет обновление статуса
@@ -108,7 +105,7 @@ func TestSetStatus(t *testing.T) {
 	// обновите статус, убедитесь в отсутствии ошибки
 	p,err:=store.Get(id)
 	require.NoError(t,err)
-	require.Equal(t, ParcelStatusSent, p.Status, "Status does not match")
+	assert.Equal(t, ParcelStatusSent, p.Status, "Status does not match")
 	// check
 	// получите добавленную посылку и убедитесь, что статус обновился
 }
@@ -150,10 +147,10 @@ func TestGetByClient(t *testing.T) {
 	// убедитесь в отсутствии ошибки
 	require.NoError(t,err)
 	// убедитесь, что количество полученных посылок совпадает с количеством добавленных
-	require.Equal(t,len(storedParcels),len(parcels),"Amount of parcels retrieved from DB does not match amount added")
+	assert.Equal(t,len(storedParcels),len(parcels),"Amount of parcels retrieved from DB does not match amount added")
 	for _, parcel := range storedParcels {
 		expectedParcel, ok := parcelMap[parcel.Number]
 	require.True(t, ok, "Unexpected parcel found with ID: %d", parcel.Number)
-    require.Equal(t, expectedParcel, parcel, "Parcel does not match for parcel ID: %d", parcel.Number)
+    assert.Equal(t, expectedParcel, parcel, "Parcel does not match for parcel ID: %d", parcel.Number)
 }
 }
