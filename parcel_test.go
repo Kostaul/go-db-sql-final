@@ -45,8 +45,8 @@ func TestAddGetDelete(t *testing.T) {
 
 	// get
 	p,err:=store.Get(id)
-	// получите только что добавленную посылку, убедитесь в отсутствии ошибки
 	require.NoError(t,err)
+	parcel.Number = id
 	assert.Equal(t, p, parcel, "Parcel does not match.")
 
 	// проверьте, что значения всех полей в полученном объекте совпадают со значениями полей в переменной parcel

@@ -32,15 +32,13 @@ func (s ParcelStore) Add(p Parcel) (int, error) {
 func (s ParcelStore) Get(number int) (Parcel, error) {
 	// реализуйте чтение строки по заданному number
 	// здесь из таблицы должна вернуться только одна строка
-	query:= "SELECT client,status,address,created_at FROM parcel WHERE number=?"
+	query:= "SELECT * FROM parcel WHERE number=?"
 	p := Parcel{}
 
-	err := s.db.QueryRow(query, number).Scan(&p.Client, &p.Status, &p.Address, &p.CreatedAt)
+	err := s.db.QueryRow(query, number).Scan(&p.Number,&p.Client, &p.Status, &p.Address, &p.CreatedAt)
 	if err != nil {
 		return Parcel{},err
 	}
-
-
 	// заполните объект Parcel данными из таблицы
 
 	return p, nil
